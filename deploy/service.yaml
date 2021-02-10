@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: keptn-locust-service
-          image: keptn-sandbox/keptn-locust-service:latest
+          image: keptnsandbox/keptn-locust-service:latest
           ports:
             - containerPort: 8080
           env:

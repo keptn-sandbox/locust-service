@@ -2,7 +2,7 @@ apiVersion: skaffold/v1beta13
 kind: Config
 build:
   artifacts:
-    - image: keptn-sandbox/keptn-locust-service
+    - image: keptnsandbox/keptn-locust-service
       docker:
         dockerfile: Dockerfile
         buildArgs:
