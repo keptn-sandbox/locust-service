@@ -1,3 +1,3 @@
 # Keptn Locust Service
 
-TBD
+Keptn service for Locust.io performance testing tool.
