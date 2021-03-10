@@ -1,32 +1,30 @@
 ---
-# Deployment of our keptn-locust-service
+# Deployment of our locust-service
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: keptn-locust-service
+  name: locust-service
   namespace: keptn
 spec:
   selector:
     matchLabels:
-      run: keptn-locust-service
+      run: locust-service
   replicas: 1
   template:
     metadata:
       labels:
-        run: keptn-locust-service
+        run: locust-service
     spec:
       containers:
-        - name: keptn-locust-service
-          image: keptnsandbox/keptn-locust-service:latest
+        - name: locust-service
+          image: keptnsandbox/locust-service:latest # Todo: Replace this with your image name
           ports:
             - containerPort: 8080
           env:
-            - name: EVENTBROKER
-              value: 'http://event-broker/keptn'
             - name: CONFIGURATION_SERVICE
               value: 'http://configuration-service:8080'
         - name: distributor
-          image: keptn/distributor:0.7.1
+          image: keptn/distributor:0.8.0
           livenessProbe:
             httpGet:
               path: /health
@@ -38,32 +36,32 @@ spec:
             - containerPort: 8080
           resources:
             requests:
-              memory: "32Mi"
-              cpu: "50m"
+              memory: "16Mi"
+              cpu: "25m"
             limits:
-              memory: "128Mi"
-              cpu: "500m"
+              memory: "32Mi"
+              cpu: "250m"
           env:
             - name: PUBSUB_URL
               value: 'nats://keptn-nats-cluster'
             - name: PUBSUB_TOPIC
-              value: 'sh.keptn.>'
+              value: 'sh.keptn.event.test.triggered'
             - name: PUBSUB_RECIPIENT
               value: '127.0.0.1'
       serviceAccountName: keptn-default
 ---
-# Expose keptn-locust-service via Port 8080 within the cluster
+# Expose locust-service via Port 8080 within the cluster
 apiVersion: v1
 kind: Service
 metadata:
-  name: keptn-locust-service
+  name: locust-service
   namespace: keptn
   labels:
-    run: keptn-locust-service
+    run: locust-service
 spec:
   ports:
     - port: 8080
       protocol: TCP
   selector:
-    run: keptn-locust-service
+    run: locust-service
 

@@ -1,2 +1,2 @@
 DOCKER_ORGANIZATION="keptnsandbox"
-IMAGE="keptn-locust-service"
+IMAGE="locust-service"

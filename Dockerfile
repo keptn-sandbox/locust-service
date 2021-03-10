@@ -1,9 +1,7 @@
 # Use the offical Golang image to create a build artifact.
 # This is based on Debian and sets the GOPATH to /go.
 # https://hub.docker.com/_/golang
-FROM golang:1.13.7-alpine as builder
-
-RUN apk add --no-cache gcc libc-dev git
+FROM golang:1.15.5 as builder
 
 WORKDIR /src/keptn-locust-service
 
@@ -36,19 +34,13 @@ RUN GOOS=linux go build -ldflags '-linkmode=external' $BUILDFLAGS -v -o keptn-lo
 
 # Use a Docker multi-stage build to create a lean production image.
 # https://docs.docker.com/develop/develop-images/multistage-build/#use-multi-stage-builds
-FROM alpine:3.11
+FROM python:3.8-slim
 ENV ENV=production
-
-# Install extra packages
-# See https://github.com/gliderlabs/docker-alpine/issues/136#issuecomment-272703023
-
-RUN    apk update && apk upgrade \
-	&& apk add ca-certificates libc6-compat \
-	&& update-ca-certificates \
-	&& rm -rf /var/cache/apk/*
 
 ARG version=develop
 ENV VERSION="${version}"
+
+RUN pip3 install --no-cache-dir locust
 
 # Copy the binary to the production image from the builder stage.
 COPY --from=builder /src/keptn-locust-service/keptn-locust-service /keptn-locust-service
