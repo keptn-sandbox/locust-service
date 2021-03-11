@@ -1,0 +1,6 @@
+README.md
+skaffold.yaml
+deploy/
+releasenotes/
+test-events/
+Dockerfile
