@@ -10,7 +10,7 @@ class WebsiteUser(HttpUser):
 
     @task
     def carts(self):
-        self.client.get("/carts")
+        self.client.get("/carts/1")
 
     @task
     def health(self):
