@@ -29,11 +29,10 @@ func GenericLogKeptnCloudEventHandler(myKeptn *keptnv2.Keptn, incomingEvent clou
 
 // getServiceURL extracts the deployment URI from the test.triggered cloud-event
 func getServiceURL(data *keptnv2.TestTriggeredEventData) (*url.URL, error) {
-	if len(data.Deployment.DeploymentURIsLocal) > 0 && data.Deployment.DeploymentURIsLocal[0] != "" {
-		return url.Parse(data.Deployment.DeploymentURIsLocal[0])
-
-	} else if len(data.Deployment.DeploymentURIsPublic) > 0 && data.Deployment.DeploymentURIsPublic[0] != "" {
+	if len(data.Deployment.DeploymentURIsPublic) > 0 && data.Deployment.DeploymentURIsPublic[0] != "" {
 		return url.Parse(data.Deployment.DeploymentURIsPublic[0])
+	} else if len(data.Deployment.DeploymentURIsLocal) > 0 && data.Deployment.DeploymentURIsLocal[0] != "" {
+		return url.Parse(data.Deployment.DeploymentURIsLocal[0])
 	}
 
 	return nil, errors.New("no deployment URI included in event")
@@ -99,7 +98,7 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 	if data.Test.TestStrategy == "performance" {
 		locustFilename = "locust/load.py"
 		numUsers = 100
-		timeSpend = "10m"
+		timeSpend = "2m"
 	} else if data.Test.TestStrategy == "functional" {
 		locustFilename = "locust/basic.py"
 		numUsers = 1
@@ -110,7 +109,7 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 		timeSpend = "30s"
 	}
 
-	fmt.Printf("TestStrategy=%s -> numUsers=%d, testFile=%s\n", data.Test.TestStrategy, numUsers, locustFilename)
+	fmt.Printf("TestStrategy=%s -> numUsers=%d, testFile=%s, serviceUrl=%s\n", data.Test.TestStrategy, numUsers, locustFilename, serviceURL.String())
 
 	// create a tempdir
 	tempDir, err := ioutil.TempDir("", "locust")
