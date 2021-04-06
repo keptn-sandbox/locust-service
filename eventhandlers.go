@@ -24,7 +24,6 @@ const (
 	LocustConfFilename       = "locust/locust.conf.yaml"
 )
 
-
 type LocustConf struct {
 	SpecVersion string      `json:"spec_version" yaml:"spec_version"`
 	Workloads   []*Workload `json:"workloads" yaml:"workloads"`
@@ -35,7 +34,6 @@ type Workload struct {
 	Script            string            `json:"script" yaml:"script"`
 	Conf			string            `json:"conf" yaml:"conf"`
 }
-
 
 // Loads locust.conf for the current service
 func getLocustConf(myKeptn *keptnv2.Keptn, project string, stage string, service string) (*LocustConf, error) {
@@ -165,34 +163,23 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 	}
 	defer os.RemoveAll(tempDir)
 
-	// ToDo: this should be configured similar to jmeter.conf
-	// https://github.com/keptn/keptn/tree/master/jmeter-service#custom-workloads
 	var locustconf *LocustConf
 	locustconf, err = getLocustConf(myKeptn, myKeptn.Event.GetProject(), myKeptn.Event.GetStage(), myKeptn.Event.GetService())
 
-	fmt.Println("Locust configuration loaded!")
-	fmt.Println(locustconf)
+	var configFile = ""
 
 	for _, workload := range locustconf.Workloads {
 		if workload.TestStrategy == data.Test.TestStrategy {
-			locustFilename = workload.Script
+			if workload.Script != "" {
+				locustFilename = workload.Script
+			} else {
+				locustFilename = "locust/basic.py"
+			}
 
-			// TODO: Implement locust config file
+			if workload.Conf != "" {
+				configFile = workload.Conf
+			}
 		}
-	}
-
-	if data.Test.TestStrategy == "performance" {
-		locustFilename = "locust/load.py"
-		numUsers = 100
-		timeSpend = "2m"
-	} else if data.Test.TestStrategy == "functional" {
-		locustFilename = "locust/basic.py"
-		numUsers = 1
-		timeSpend = "1m"
-	} else {
-		locustFilename = "locust/health.py"
-		numUsers = 1
-		timeSpend = "30s"
 	}
 
 	fmt.Printf("TestStrategy=%s -> numUsers=%d, testFile=%s, serviceUrl=%s\n", data.Test.TestStrategy, numUsers, locustFilename, serviceURL.String())
@@ -219,13 +206,23 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 	// CAPTURE START TIME
 	startTime := time.Now()
 
-	// locust -f locust/test.py --headless --host=HOST --users=1 --run-time=1m
-	str, err := keptn.ExecuteCommand("locust", []string{
+	// Download locust configuration file
+	locustConfiguration, err := getKeptnResource(myKeptn, configFile, tempDir)
+
+	command := []string{
 		"-f", locustResouceFilenameLocal,
 		"--headless", "--only-summary",
 		"--host=" + serviceURL.String(),
 		fmt.Sprintf("--users=%d", numUsers),
-		fmt.Sprintf("--run-time=%s", timeSpend)})
+		fmt.Sprintf("--run-time=%s", timeSpend),
+	}
+
+	if locustConfiguration != "" {
+		command = append(command, fmt.Sprintf("--config=%d", locustConfiguration))
+	}
+
+	// locust -f locust/test.py --headless --host=HOST --users=1 --run-time=1m
+	str, err := keptn.ExecuteCommand("locust", command)
 
 	log.Print(str)
 

@@ -15,6 +15,7 @@ keptn add-resource --project=sockshop --service=carts --stage=dev --resource=bas
 keptn add-resource --project=sockshop --service=carts --stage=staging --resource=load.py --resourceUri=locust/load.py
 keptn add-resource --project=sockshop --service=carts --stage=production --resource=health.py --resourceUri=locust/health.py
 keptn add-resource --project=sockshop --service=carts --stage=dev --resource=locust.conf.yaml --resourceUri=locust/locust.conf.yaml
+keptn add-resource --project=sockshop --service=carts --stage=dev --resource=locust.conf --resourceUri=locust/locust.conf
 
 # 4. Trigger a delivery
 keptn trigger delivery --project=sockshop --service=carts --image=docker.io/keptnexamples/carts --tag=0.12.3
