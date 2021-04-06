@@ -14,6 +14,7 @@ kubectl scale deployment/jmeter-service -n "keptn" --replicas=0
 keptn add-resource --project=sockshop --service=carts --stage=dev --resource=basic.py --resourceUri=locust/basic.py
 keptn add-resource --project=sockshop --service=carts --stage=staging --resource=load.py --resourceUri=locust/load.py
 keptn add-resource --project=sockshop --service=carts --stage=production --resource=health.py --resourceUri=locust/health.py
+keptn add-resource --project=sockshop --service=carts --stage=dev --resource=locust.conf.yaml --resourceUri=locust/locust.conf.yaml
 
 # 4. Trigger a delivery
 keptn trigger delivery --project=sockshop --service=carts --image=docker.io/keptnexamples/carts --tag=0.12.3

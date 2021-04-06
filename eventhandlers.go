@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"gopkg.in/yaml.v3"
 	"io/ioutil"
 	"log"
 	"net/url"
@@ -18,6 +19,70 @@ import (
 * Here are all the handler functions for the individual event
 * See https://github.com/keptn/spec/blob/0.8.0-alpha/cloudevents.md for details on the payload
 **/
+
+const (
+	LocustConfFilename       = "locust/locust.conf.yaml"
+)
+
+
+type LocustConf struct {
+	SpecVersion string      `json:"spec_version" yaml:"spec_version"`
+	Workloads   []*Workload `json:"workloads" yaml:"workloads"`
+}
+
+type Workload struct {
+	TestStrategy      string            `json:"teststrategy" yaml:"teststrategy"`
+	Script            string            `json:"script" yaml:"script"`
+	Conf			string            `json:"conf" yaml:"conf"`
+}
+
+
+// Loads locust.conf for the current service
+func getLocustConf(myKeptn *keptnv2.Keptn, project string, stage string, service string) (*LocustConf, error) {
+	// if we run in a runlocal mode we are just getting the file from the local disk
+	var fileContent []byte
+	var err error
+
+	log.Printf(fmt.Sprintf("Loading %s for %s.%s.%s", LocustConfFilename, project, stage, service))
+
+	keptnResourceContent, err := myKeptn.GetKeptnResource(LocustConfFilename)
+
+	if err != nil {
+		logMessage := fmt.Sprintf("error when trying to load %s file for service %s on stage %s or project-level %s", LocustConfFilename, service, stage, project)
+		log.Printf(logMessage)
+		log.Println(err)
+		return nil, errors.New(logMessage)
+	}
+	if keptnResourceContent == "" {
+		// if no locust.conf file is available, this is not an error, as the service will proceed with the default workload
+		log.Printf(fmt.Sprintf("no %s found", LocustConfFilename))
+		return nil, nil
+	}
+	fileContent = []byte(keptnResourceContent)
+
+	var locustConf *LocustConf
+	locustConf, err = parseLocustConf(fileContent)
+	if err != nil {
+		logMessage := fmt.Sprintf("Couldn't parse %s file found for service %s in stage %s in project %s. Error: %s", LocustConfFilename, service, stage, project, err.Error())
+		log.Fatal(logMessage)
+		return nil, errors.New(logMessage)
+	}
+
+	log.Printf(fmt.Sprintf("Successfully loaded locust.conf.yaml with %d workloads", len(locustConf.Workloads)))
+
+	return locustConf, nil
+}
+
+// parses content and maps it to the LocustConf struct
+func parseLocustConf(input []byte) (*LocustConf, error) {
+	locustconf := &LocustConf{}
+	err := yaml.Unmarshal([]byte(input), &locustconf)
+	if err != nil {
+		return nil, err
+	}
+
+	return locustconf, nil
+}
 
 // GenericLogKeptnCloudEventHandler is a generic handler for Keptn Cloud Events that logs the CloudEvent
 func GenericLogKeptnCloudEventHandler(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.Event, data interface{}) error {
@@ -47,7 +112,7 @@ func getKeptnResource(myKeptn *keptnv2.Keptn, resourceName string, tempDir strin
 		return "", err
 	}
 
-	targetFileName := fmt.Sprintf("%s/%s", tempDir, "locust.py")
+	targetFileName := fmt.Sprintf("%s/%s", tempDir, resourceName)
 
 	resourceFile, err := os.Create(targetFileName)
 	defer resourceFile.Close()
@@ -93,8 +158,29 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 	var numUsers int
 	var timeSpend string
 
+	// create a tempdir
+	tempDir, err := ioutil.TempDir("", "locust")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer os.RemoveAll(tempDir)
+
 	// ToDo: this should be configured similar to jmeter.conf
 	// https://github.com/keptn/keptn/tree/master/jmeter-service#custom-workloads
+	var locustconf *LocustConf
+	locustconf, err = getLocustConf(myKeptn, myKeptn.Event.GetProject(), myKeptn.Event.GetStage(), myKeptn.Event.GetService())
+
+	fmt.Println("Locust configuration loaded!")
+	fmt.Println(locustconf)
+
+	for _, workload := range locustconf.Workloads {
+		if workload.TestStrategy == data.Test.TestStrategy {
+			locustFilename = workload.Script
+
+			// TODO: Implement locust config file
+		}
+	}
+
 	if data.Test.TestStrategy == "performance" {
 		locustFilename = "locust/load.py"
 		numUsers = 100
@@ -110,13 +196,6 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 	}
 
 	fmt.Printf("TestStrategy=%s -> numUsers=%d, testFile=%s, serviceUrl=%s\n", data.Test.TestStrategy, numUsers, locustFilename, serviceURL.String())
-
-	// create a tempdir
-	tempDir, err := ioutil.TempDir("", "locust")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer os.RemoveAll(tempDir)
 
 	locustResouceFilenameLocal, err := getKeptnResource(myKeptn, locustFilename, tempDir)
 

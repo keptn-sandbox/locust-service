@@ -1,0 +1,11 @@
+---
+spec_version: '0.1.0'
+workloads:
+  - teststrategy: performance_heavy
+    script: ./performance.py
+    conf: ./performance.conf
+  - teststrategy: performance_light
+    script: ./performance.py
+    conf: ./performance_light.conf
+  - teststrategy: functional
+    script: ./func.py
