@@ -175,7 +175,7 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 		EventData: keptnv2.EventData{
 			Result:  keptnv2.ResultPass,
 			Status:  keptnv2.StatusSucceeded,
-			Message: str,
+			Message: "Locust test finished successfully",
 		},
 	}
 
