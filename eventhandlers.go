@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2" // make sure to use v2 cloudevents here
@@ -110,7 +111,12 @@ func getKeptnResource(myKeptn *keptnv2.Keptn, resourceName string, tempDir strin
 		return "", err
 	}
 
-	targetFileName := fmt.Sprintf("%s/%s", tempDir, resourceName)
+	// Cut away folders from the path (if there are any)
+	path := strings.Split(resourceName, "/")
+
+	targetFileName := fmt.Sprintf("%s/%s", tempDir, path[len(path)-1])
+
+	fmt.Println("Targetfile name: "+targetFileName)
 
 	resourceFile, err := os.Create(targetFileName)
 	defer resourceFile.Close()
@@ -153,8 +159,6 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 	}
 
 	var locustFilename string
-	var numUsers int
-	var timeSpend string
 
 	// create a tempdir
 	tempDir, err := ioutil.TempDir("", "locust")
@@ -166,77 +170,109 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 	var locustconf *LocustConf
 	locustconf, err = getLocustConf(myKeptn, myKeptn.Event.GetProject(), myKeptn.Event.GetStage(), myKeptn.Event.GetService())
 
+	if err != nil {
+		fmt.Printf("Failed to load Configuration file: %s", err.Error())
+	}
+
 	var configFile = ""
 
-	for _, workload := range locustconf.Workloads {
-		if workload.TestStrategy == data.Test.TestStrategy {
-			if workload.Script != "" {
-				locustFilename = workload.Script
-			} else {
-				locustFilename = "locust/basic.py"
-			}
+	if locustconf != nil {
+		for _, workload := range locustconf.Workloads {
+			if workload.TestStrategy == data.Test.TestStrategy {
+				if workload.Script != "" {
+					locustFilename = workload.Script
+				} else {
+					locustFilename = ""
+				}
 
-			if workload.Conf != "" {
-				configFile = workload.Conf
+				if workload.Conf != "" {
+					configFile = workload.Conf
+				}
 			}
 		}
+	} else {
+		locustFilename = "locustfile.py"
+		fmt.Println("No locust.conf.yaml file provided. Continuing with default settings!")
 	}
 
 	fmt.Printf("TestStrategy=%s -> numUsers=%d, testFile=%s, serviceUrl=%s\n", data.Test.TestStrategy, numUsers, locustFilename, serviceURL.String())
 
-	locustResouceFilenameLocal, err := getKeptnResource(myKeptn, locustFilename, tempDir)
+	var locustResouceFilenameLocal = ""
+	if locustFilename != "" {
+		locustResouceFilenameLocal, err = getKeptnResource(myKeptn, locustFilename, tempDir)
 
-	// FYI you do not need to "fail" if sli.yaml is missing, you can also assume smart defaults like we do
-	// in keptn-contrib/dynatrace-service and keptn-contrib/prometheus-service
-	if err != nil {
-		// failed to fetch sli config file
-		errMsg := fmt.Sprintf("Failed to fetch locust file %s from config repo: %s", locustFilename, err.Error())
-		log.Println(errMsg)
-		// send a get-sli.finished event with status=error and result=failed back to Keptn
+		// FYI you do not need to "fail" if sli.yaml is missing, you can also assume smart defaults like we do
+		// in keptn-contrib/dynatrace-service and keptn-contrib/prometheus-service
+		if err != nil {
+			// failed to fetch sli config file
+			errMsg := fmt.Sprintf("Failed to fetch locust file %s from config repo: %s", locustFilename, err.Error())
+			log.Println(errMsg)
+			// send a get-sli.finished event with status=error and result=failed back to Keptn
 
-		_, err = myKeptn.SendTaskFinishedEvent(&keptnv2.EventData{
-			Status:  keptnv2.StatusErrored,
-			Result:  keptnv2.ResultFailed,
-			Message: errMsg,
-		}, ServiceName)
+			_, err = myKeptn.SendTaskFinishedEvent(&keptnv2.EventData{
+				Status:  keptnv2.StatusErrored,
+				Result:  keptnv2.ResultFailed,
+				Message: errMsg,
+			}, ServiceName)
 
-		return err
+			return err
+		} else {
+			log.Println("Successfully fetched locust test file")
+		}
 	}
 
 	// CAPTURE START TIME
 	startTime := time.Now()
 
 	// Download locust configuration file
-	locustConfiguration, err := getKeptnResource(myKeptn, configFile, tempDir)
+	var locustConfiguration = ""
+	if configFile != "" {
+		locustConfiguration, err = getKeptnResource(myKeptn, configFile, tempDir)
+
+		if err != nil {
+			errMsg := fmt.Sprintf("Failed to fetch locust config file %s from config repo: %s", configFile, err.Error())
+			log.Println(errMsg)
+		}
+	}
 
 	command := []string{
-		"-f", locustResouceFilenameLocal,
 		"--headless", "--only-summary",
 		"--host=" + serviceURL.String(),
-		fmt.Sprintf("--users=%d", numUsers),
-		fmt.Sprintf("--run-time=%s", timeSpend),
+	}
+
+	if locustResouceFilenameLocal != "" {
+		command = append(command, fmt.Sprintf("-f=%s", locustResouceFilenameLocal))
 	}
 
 	if locustConfiguration != "" {
-		command = append(command, fmt.Sprintf("--config=%d", locustConfiguration))
+		command = append(command, fmt.Sprintf("--config=%s", locustConfiguration))
+	} else {
+		// Set default values
+		command = append(command, fmt.Sprintf("--users=%d", 10))
+		command = append(command, fmt.Sprintf("--run-time=%s", "2m"))
 	}
 
-	// locust -f locust/test.py --headless --host=HOST --users=1 --run-time=1m
-	str, err := keptn.ExecuteCommand("locust", command)
+	fmt.Println(command)
 
-	log.Print(str)
+	if locustResouceFilenameLocal == "" && locustConfiguration == "" {
+		fmt.Println("Neither script nor conf is provided -> skipping tests")
+	} else {
+		str, err := keptn.ExecuteCommand("locust", command)
 
-	if err != nil {
-		// report error
-		log.Print(err)
-		// send out a test.finished failed CloudEvent
-		_, err = myKeptn.SendTaskFinishedEvent(&keptnv2.EventData{
-			Status:  keptnv2.StatusErrored,
-			Result:  keptnv2.ResultFailed,
-			Message: err.Error(),
-		}, ServiceName)
+		log.Print(str)
 
-		return err
+		if err != nil {
+			// report error
+			log.Print(err)
+			// send out a test.finished failed CloudEvent
+			_, err = myKeptn.SendTaskFinishedEvent(&keptnv2.EventData{
+				Status:  keptnv2.StatusErrored,
+				Result:  keptnv2.ResultFailed,
+				Message: err.Error(),
+			}, ServiceName)
+
+			return err
+		}
 	}
 
 	endTime := time.Now()
