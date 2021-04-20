@@ -72,6 +72,46 @@ func getLocustConf(myKeptn *keptnv2.Keptn, project string, stage string, service
 	return locustConf, nil
 }
 
+func getAllLocustResources(myKeptn *keptnv2.Keptn, project string, stage string, service string, tempDir string) error {
+	resources, err := myKeptn.ResourceHandler.GetAllServiceResources(project, stage, service)
+
+	if err != nil {
+		log.Printf("Error getting locust files: %s", err.Error())
+		return err
+	}
+
+	for _, resource := range resources {
+		if strings.Contains(*resource.ResourceURI, "locust/") {
+			fmt.Println("URI: "+*resource.ResourceURI)
+
+			path := strings.Split(*resource.ResourceURI, "/")
+			err = saveResourceToDirectory(tempDir,  path[len(path)-1], []byte(resource.ResourceContent))
+
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func saveResourceToDirectory(tempDir string, resourceName string, content []byte) error {
+	targetFileName := fmt.Sprintf("%s/%s", tempDir, resourceName)
+
+	resourceFile, err := os.Create(targetFileName)
+	defer resourceFile.Close()
+
+	_, err = resourceFile.Write(content)
+
+	if err != nil {
+		fmt.Printf("Failed to create tempfile: %s\n", err.Error())
+		return err
+	}
+
+	return nil
+}
+
 // parses content and maps it to the LocustConf struct
 func parseLocustConf(input []byte) (*LocustConf, error) {
 	locustconf := &LocustConf{}
@@ -116,8 +156,6 @@ func getKeptnResource(myKeptn *keptnv2.Keptn, resourceName string, tempDir strin
 
 	targetFileName := fmt.Sprintf("%s/%s", tempDir, path[len(path)-1])
 
-	fmt.Println("Targetfile name: "+targetFileName)
-
 	resourceFile, err := os.Create(targetFileName)
 	defer resourceFile.Close()
 
@@ -129,6 +167,28 @@ func getKeptnResource(myKeptn *keptnv2.Keptn, resourceName string, tempDir strin
 	}
 
 	return targetFileName, nil
+}
+
+func replaceLocustFileName(filename string, tempDir string) {
+	input, err := ioutil.ReadFile(filename)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	lines := strings.Split(string(input), "\n")
+
+	for i, line := range lines {
+		if strings.Contains(line, "locustfile") {
+			parts := strings.Split(lines[i], "/")
+			lines[i] = fmt.Sprintf("locustfile = %s/%s", tempDir, parts[len(parts)-1])
+		}
+	}
+
+	output := strings.Join(lines, "\n")
+	err = ioutil.WriteFile(filename, []byte(output), 0644)
+	if err != nil {
+		log.Fatalln(err)
+	}
 }
 
 // HandleTestTriggeredEvent handles test.triggered events by calling locust
@@ -195,7 +255,7 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 		fmt.Println("No locust.conf.yaml file provided. Continuing with default settings!")
 	}
 
-	fmt.Printf("TestStrategy=%s -> numUsers=%d, testFile=%s, serviceUrl=%s\n", data.Test.TestStrategy, numUsers, locustFilename, serviceURL.String())
+	fmt.Printf("TestStrategy=%s -> testFile=%s, serviceUrl=%s\n", data.Test.TestStrategy, locustFilename, serviceURL.String())
 
 	var locustResouceFilenameLocal = ""
 	if locustFilename != "" {
@@ -232,6 +292,15 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 		if err != nil {
 			errMsg := fmt.Sprintf("Failed to fetch locust config file %s from config repo: %s", configFile, err.Error())
 			log.Println(errMsg)
+		} else {
+			/*fetchErr := getAllLocustResources(myKeptn, myKeptn.Event.GetProject(), myKeptn.Event.GetStage(), myKeptn.Event.GetService(), tempDir)
+
+			if fetchErr != nil {
+				fmt.Println(fetchErr)
+			}*/
+
+			fmt.Println("Replacing locust configuration")
+			replaceLocustFileName(locustConfiguration, tempDir)
 		}
 	}
 
@@ -257,9 +326,11 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 	if locustResouceFilenameLocal == "" && locustConfiguration == "" {
 		fmt.Println("Neither script nor conf is provided -> skipping tests")
 	} else {
+		log.Println("Running locust tests")
 		str, err := keptn.ExecuteCommand("locust", command)
 
-		log.Print(str)
+		log.Println("Finished running locust tests")
+		log.Println(str)
 
 		if err != nil {
 			// report error
