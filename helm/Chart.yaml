@@ -1,0 +1,6 @@
+apiVersion: v2
+appVersion: 0.8.0
+description: Helm Chart for the keptn locust-service
+name: locust-service
+type: application
+version: 0.8.0
