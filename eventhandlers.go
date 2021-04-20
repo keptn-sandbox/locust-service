@@ -21,15 +21,18 @@ import (
 * See https://github.com/keptn/spec/blob/0.8.0-alpha/cloudevents.md for details on the payload
 **/
 
+// Locust configuration file path
 const (
 	LocustConfFilename       = "locust/locust.conf.yaml"
 )
 
+// LocustConf Configuration file type
 type LocustConf struct {
 	SpecVersion string      `json:"spec_version" yaml:"spec_version"`
 	Workloads   []*Workload `json:"workloads" yaml:"workloads"`
 }
 
+// Workload of Keptn stage
 type Workload struct {
 	TestStrategy      string            `json:"teststrategy" yaml:"teststrategy"`
 	Script            string            `json:"script" yaml:"script"`
@@ -258,9 +261,9 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 			}, ServiceName)
 
 			return err
-		} else {
-			log.Println("Successfully fetched locust test file")
-		}
+		} 
+
+		log.Println("Successfully fetched locust test file")
 	}
 
 	// CAPTURE START TIME
