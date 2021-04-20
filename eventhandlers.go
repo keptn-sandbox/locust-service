@@ -160,7 +160,8 @@ func replaceLocustFileName(filename string, tempDir string) {
 
 	for i, line := range lines {
 		if strings.Contains(line, "locustfile") {
-			parts := strings.Split(lines[i], "/")
+			locustURI := strings.Split(lines[i], "=")
+			parts := strings.Split(locustURI[len(locustURI)-1], "/")
 			lines[i] = fmt.Sprintf("locustfile = %s/%s", tempDir, parts[len(parts)-1])
 		}
 	}
