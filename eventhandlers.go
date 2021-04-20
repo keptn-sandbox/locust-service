@@ -81,32 +81,13 @@ func getAllLocustResources(myKeptn *keptnv2.Keptn, project string, stage string,
 	}
 
 	for _, resource := range resources {
-		if strings.Contains(*resource.ResourceURI, "locust/") {
-			fmt.Println("URI: "+*resource.ResourceURI)
-
-			path := strings.Split(*resource.ResourceURI, "/")
-			err = saveResourceToDirectory(tempDir,  path[len(path)-1], []byte(resource.ResourceContent))
+		if strings.Contains(*resource.ResourceURI, "locust/") && !strings.HasSuffix(*resource.ResourceURI, ".conf") {
+			_, err := getKeptnResource(myKeptn, *resource.ResourceURI, tempDir)
 
 			if err != nil {
 				return err
 			}
 		}
-	}
-
-	return nil
-}
-
-func saveResourceToDirectory(tempDir string, resourceName string, content []byte) error {
-	targetFileName := fmt.Sprintf("%s/%s", tempDir, resourceName)
-
-	resourceFile, err := os.Create(targetFileName)
-	defer resourceFile.Close()
-
-	_, err = resourceFile.Write(content)
-
-	if err != nil {
-		fmt.Printf("Failed to create tempfile: %s\n", err.Error())
-		return err
 	}
 
 	return nil
@@ -225,7 +206,7 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer os.RemoveAll(tempDir)
+	//defer os.RemoveAll(tempDir)
 
 	var locustconf *LocustConf
 	locustconf, err = getLocustConf(myKeptn, myKeptn.Event.GetProject(), myKeptn.Event.GetStage(), myKeptn.Event.GetService())
@@ -293,11 +274,11 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 			errMsg := fmt.Sprintf("Failed to fetch locust config file %s from config repo: %s", configFile, err.Error())
 			log.Println(errMsg)
 		} else {
-			/*fetchErr := getAllLocustResources(myKeptn, myKeptn.Event.GetProject(), myKeptn.Event.GetStage(), myKeptn.Event.GetService(), tempDir)
+			fetchErr := getAllLocustResources(myKeptn, myKeptn.Event.GetProject(), myKeptn.Event.GetStage(), myKeptn.Event.GetService(), tempDir)
 
 			if fetchErr != nil {
 				fmt.Println(fetchErr)
-			}*/
+			}
 
 			fmt.Println("Replacing locust configuration")
 			replaceLocustFileName(locustConfiguration, tempDir)
