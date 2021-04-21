@@ -57,7 +57,7 @@ func getLocustConf(myKeptn *keptnv2.Keptn, project string, stage string, service
 		log.Println(err)
 		return nil, errors.New(logMessage)
 	}
-	if keptnResourceContent == "" {
+	if len(keptnResourceContent) == 0 {
 		// if no locust.conf file is available, this is not an error, as the service will proceed with the default workload
 		log.Printf(fmt.Sprintf("no %s found", LocustConfFilename))
 		return nil, nil
