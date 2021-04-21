@@ -3,13 +3,14 @@ package main
 import (
 	"errors"
 	"fmt"
-	"gopkg.in/yaml.v3"
 	"io/ioutil"
 	"log"
 	"net/url"
 	"os"
 	"strings"
 	"time"
+
+	"gopkg.in/yaml.v3"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2" // make sure to use v2 cloudevents here
 	keptn "github.com/keptn/go-utils/pkg/lib"
@@ -23,7 +24,8 @@ import (
 
 // Locust configuration file path
 const (
-	LocustConfFilename       = "locust/locust.conf.yaml"
+	LocustConfFilename    = "locust/locust.conf.yaml"
+	DefaultLocustFilename = "locust/locustfile.py"
 )
 
 // LocustConf Configuration file type
@@ -34,9 +36,9 @@ type LocustConf struct {
 
 // Workload of Keptn stage
 type Workload struct {
-	TestStrategy      string            `json:"teststrategy" yaml:"teststrategy"`
-	Script            string            `json:"script" yaml:"script"`
-	Conf			string            `json:"conf" yaml:"conf"`
+	TestStrategy string `json:"teststrategy" yaml:"teststrategy"`
+	Script       string `json:"script" yaml:"script"`
+	Conf         string `json:"conf" yaml:"conf"`
 }
 
 // Loads locust.conf for the current service
@@ -236,7 +238,7 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 			}
 		}
 	} else {
-		locustFilename = "locustfile.py"
+		locustFilename = DefaultLocustFilename
 		fmt.Println("No locust.conf.yaml file provided. Continuing with default settings!")
 	}
 
@@ -261,7 +263,7 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 			}, ServiceName)
 
 			return err
-		} 
+		}
 
 		log.Println("Successfully fetched locust test file")
 	}
