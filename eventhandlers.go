@@ -24,7 +24,9 @@ import (
 
 // Locust configuration file path
 const (
-	LocustConfFilename    = "locust/locust.conf.yaml"
+	// LocustConfFilename defines the path to the locust.conf.yaml
+	LocustConfFilename = "locust/locust.conf.yaml"
+	// DefaultLocustFilename defines the path to the default locustfile.py
 	DefaultLocustFilename = "locust/locustfile.py"
 )
 
