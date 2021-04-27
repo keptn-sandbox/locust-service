@@ -1,0 +1,11 @@
+---
+spec_version: '0.1.0'
+workloads:
+  - teststrategy: functional
+    script: /locust/basic.py
+    conf: /locust/locust.conf
+  - teststrategy: performance_light
+    script: /locust/basic.py
+    conf: /locust/locust.conf
+  - teststrategy: functional-light
+    script: /locust/basic.py
