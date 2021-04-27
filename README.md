@@ -33,19 +33,19 @@ kubectl -n keptn get pods -l run=locust-service
 
 The `locust-service` expects locust test files in the project specific Keptn repo. It expects those files to be available in the `locust` subfolder for a service in the stage you want to execute tests.
 
-Here is an example on how to upload the `locust.py` test file via the Keptn CLI to the dev stage of project sockshop for the service carts:
+Here is an example on how to upload the `locustfile.py` test file via the Keptn CLI to the dev stage of project sockshop for the service carts:
 
 ```
-keptn add-resource --project=sockshop --stage=dev --service=carts --resource=locust.py --resourceUri=locust/locust.py
+keptn add-resource --project=sockshop --stage=dev --service=carts --resource=locustfile.py --resourceUri=locust/locustfile.py
 ```
 
 ### Defaults
 
-If the users does not provide a specific configuration file (see next section) the `locust-service` will search for `locust/locust.py` in the specific Keptn repo and try to execute it. If the file does not exist the tests will be skipped.
+If the user does not provide a specific configuration file (see next section) the `locust-service` will search for `locust/locustfile.py` in the specific Keptn repo and try to execute it. If the file does not exist the tests will be skipped.
 
 ### Providing a config file
 
-A `locust.conf.yaml` file can be added for more complex configurations like multiple tests files for different stages. It is also possible to provide a [locust config file](https://docs.locust.io/en/stable/configuration.html#configuration-file) to further customize the tests. If no configuration file is specified the `locust-service` will proceed with the default setting. 
+A `locust.conf.yaml` file can be added for more complex configurations like multiple test files for different stages. It is also possible to provide a [locust config file](https://docs.locust.io/en/stable/configuration.html#configuration-file) to further customize the tests. If no configuration file is specified the `locust-service` will proceed with the default setting. 
 
 ```
 ---
@@ -59,6 +59,12 @@ workloads:
     conf: /locust/locust.conf
   - teststrategy: functional-light
     script: /locust/basic.py
+```
+
+The configuration file can be added to the repo using the `keptn add-resource` command:
+
+```
+keptn add-resource --project=sockshop --service=carts --stage=dev --resource=locust.conf.yaml --resourceUri=locust/locust.conf.yaml
 ```
 
 The contents of `locust.conf.yaml` should be used as described in the following:
@@ -106,7 +112,7 @@ If you want to get more insights, please look into [main.go](main.go), [deploy/s
 * Deploy the service using `kubectl`: `kubectl apply -f deploy/`
 * Delete/undeploy the service using `kubectl`: `kubectl delete -f deploy/`
 * Watch the deployment using `kubectl`: `kubectl -n keptn get deployment locust-service -o wide`
-* Get logs using `kubectl`: `kubectl -n keptn logs deployment/locust-service -f`
+* Get logs using `kubectl`: `kubectl -n keptn logs deployment/locust-service -f locust-service`
 * Watch the deployed pods using `kubectl`: `kubectl -n keptn get pods -l run=locust-service`
 * Deploy the service using [Skaffold](https://skaffold.dev/): `skaffold run --default-repo=your-docker-registry --tail` (Note: Replace `your-docker-registry` with your DockerHub username; also make sure to adapt the image name in [skaffold.yaml](skaffold.yaml))
 
