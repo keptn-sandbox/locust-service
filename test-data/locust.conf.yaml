@@ -5,7 +5,7 @@ workloads:
     script: /locust/basic.py
     conf: /locust/locust.conf
   - teststrategy: performance_light
-    script: basic.py
-    conf: locust.conf
+    script: /locust/basic.py
+    conf: /locust/locust.conf
   - teststrategy: functional-light
-    script: basic.py
+    script: /locust/basic.py
