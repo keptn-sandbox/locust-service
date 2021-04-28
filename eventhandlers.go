@@ -45,36 +45,30 @@ type Workload struct {
 
 // Loads locust.conf for the current service
 func getLocustConf(myKeptn *keptnv2.Keptn, project string, stage string, service string) (*LocustConf, error) {
-	// if we run in a runlocal mode we are just getting the file from the local disk
-	var fileContent []byte
 	var err error
 
-	log.Printf(fmt.Sprintf("Loading %s for %s.%s.%s", LocustConfFilename, project, stage, service))
+	log.Printf("Loading %s for %s.%s.%s", LocustConfFilename, project, stage, service)
 
 	keptnResourceContent, err := myKeptn.GetKeptnResource(LocustConfFilename)
 
 	if err != nil {
-		logMessage := fmt.Sprintf("error when trying to load %s file for service %s on stage %s or project-level %s", LocustConfFilename, service, stage, project)
-		log.Printf(logMessage)
-		log.Println(err)
+		logMessage := fmt.Sprintf("error when trying to load %s file for service %s on stage %s or project-level %s: %s", LocustConfFilename, service, stage, project, err.Error())
 		return nil, errors.New(logMessage)
 	}
 	if len(keptnResourceContent) == 0 {
 		// if no locust.conf file is available, this is not an error, as the service will proceed with the default workload
-		log.Printf(fmt.Sprintf("no %s found", LocustConfFilename))
+		log.Printf("no %s found", LocustConfFilename)
 		return nil, nil
 	}
-	fileContent = []byte(keptnResourceContent)
 
 	var locustConf *LocustConf
-	locustConf, err = parseLocustConf(fileContent)
+	locustConf, err = parseLocustConf(keptnResourceContent)
 	if err != nil {
 		logMessage := fmt.Sprintf("Couldn't parse %s file found for service %s in stage %s in project %s. Error: %s", LocustConfFilename, service, stage, project, err.Error())
-		log.Fatal(logMessage)
 		return nil, errors.New(logMessage)
 	}
 
-	log.Printf(fmt.Sprintf("Successfully loaded locust.conf.yaml with %d workloads", len(locustConf.Workloads)))
+	log.Printf("Successfully loaded locust.conf.yaml with %d workloads", len(locustConf.Workloads))
 
 	return locustConf, nil
 }
@@ -103,7 +97,7 @@ func getAllLocustResources(myKeptn *keptnv2.Keptn, project string, stage string,
 // parses content and maps it to the LocustConf struct
 func parseLocustConf(input []byte) (*LocustConf, error) {
 	locustconf := &LocustConf{}
-	err := yaml.Unmarshal([]byte(input), &locustconf)
+	err := yaml.Unmarshal(input, &locustconf)
 	if err != nil {
 		return nil, err
 	}
@@ -112,11 +106,9 @@ func parseLocustConf(input []byte) (*LocustConf, error) {
 }
 
 // GenericLogKeptnCloudEventHandler is a generic handler for Keptn Cloud Events that logs the CloudEvent
-func GenericLogKeptnCloudEventHandler(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.Event, data interface{}) error {
+func GenericLogKeptnCloudEventHandler(incomingEvent cloudevents.Event, data interface{}) {
 	log.Printf("Handling %s Event: %s", incomingEvent.Type(), incomingEvent.Context.GetID())
 	log.Printf("CloudEvent %T: %v", data, data)
-
-	return nil
 }
 
 // getServiceURL extracts the deployment URI from the test.triggered cloud-event
@@ -135,7 +127,7 @@ func getKeptnResource(myKeptn *keptnv2.Keptn, resourceName string, tempDir strin
 	requestedResourceContent, err := myKeptn.GetKeptnResource(resourceName)
 
 	if err != nil {
-		fmt.Printf("Failed to fetch file: %s\n", err.Error())
+		log.Printf("Failed to fetch file: %s\n", err.Error())
 		return "", err
 	}
 
@@ -147,10 +139,10 @@ func getKeptnResource(myKeptn *keptnv2.Keptn, resourceName string, tempDir strin
 	resourceFile, err := os.Create(targetFileName)
 	defer resourceFile.Close()
 
-	_, err = resourceFile.Write([]byte(requestedResourceContent))
+	_, err = resourceFile.Write(requestedResourceContent)
 
 	if err != nil {
-		fmt.Printf("Failed to create tempfile: %s\n", err.Error())
+		log.Printf("Failed to create tempfile: %s\n", err.Error())
 		return "", err
 	}
 
@@ -189,8 +181,7 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 	_, err := myKeptn.SendTaskStartedEvent(&keptnv2.EventData{}, ServiceName)
 
 	if err != nil {
-		errMsg := fmt.Sprintf("Failed to send task started CloudEvent (%s), aborting...", err.Error())
-		log.Println(errMsg)
+		log.Printf("Failed to send task started CloudEvent (%s), aborting... \n", err.Error())
 		return err
 	}
 
@@ -220,7 +211,7 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 	locustconf, err = getLocustConf(myKeptn, myKeptn.Event.GetProject(), myKeptn.Event.GetStage(), myKeptn.Event.GetService())
 
 	if err != nil {
-		fmt.Printf("Failed to load Configuration file: %s", err.Error())
+		log.Printf("Failed to load Configuration file: %s", err.Error())
 	}
 
 	var configFile = ""
@@ -241,10 +232,10 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 		}
 	} else {
 		locustFilename = DefaultLocustFilename
-		fmt.Println("No locust.conf.yaml file provided. Continuing with default settings!")
+		log.Println("No locust.conf.yaml file provided. Continuing with default settings!")
 	}
 
-	fmt.Printf("TestStrategy=%s -> testFile=%s, serviceUrl=%s\n", data.Test.TestStrategy, locustFilename, serviceURL.String())
+	log.Printf("TestStrategy=%s -> testFile=%s, serviceUrl=%s\n", data.Test.TestStrategy, locustFilename, serviceURL.String())
 
 	var locustResouceFilenameLocal = ""
 	if locustFilename != "" {
@@ -279,16 +270,15 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 		locustConfiguration, err = getKeptnResource(myKeptn, configFile, tempDir)
 
 		if err != nil {
-			errMsg := fmt.Sprintf("Failed to fetch locust config file %s from config repo: %s", configFile, err.Error())
-			log.Println(errMsg)
+			log.Printf("Failed to fetch locust config file %s from config repo: %s \n", configFile, err.Error())
 		} else {
 			fetchErr := getAllLocustResources(myKeptn, myKeptn.Event.GetProject(), myKeptn.Event.GetStage(), myKeptn.Event.GetService(), tempDir)
 
 			if fetchErr != nil {
-				fmt.Println(fetchErr)
+				log.Println(fetchErr)
 			}
 
-			fmt.Println("Replacing locust configuration")
+			log.Println("Replacing locust configuration")
 			replaceLocustFileName(locustConfiguration, tempDir)
 		}
 	}
@@ -310,10 +300,8 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 		command = append(command, fmt.Sprintf("--run-time=%s", "2m"))
 	}
 
-	fmt.Println(command)
-
 	if locustResouceFilenameLocal == "" && locustConfiguration == "" {
-		fmt.Println("Neither script nor conf is provided -> skipping tests")
+		log.Println("Neither script nor conf is provided -> skipping tests")
 	} else {
 		log.Println("Running locust tests")
 		str, err := keptn.ExecuteCommand("locust", command)
@@ -355,8 +343,7 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 	_, err = myKeptn.SendTaskFinishedEvent(finishedEvent, ServiceName)
 
 	if err != nil {
-		errMsg := fmt.Sprintf("Failed to send task finished CloudEvent (%s), aborting...", err.Error())
-		log.Println(errMsg)
+		log.Printf("Failed to send task finished CloudEvent (%s), aborting...\n", err.Error())
 		return err
 	}
 
