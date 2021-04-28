@@ -48,7 +48,7 @@ spec:
               value: 'sh.keptn.event.test.triggered'
             - name: PUBSUB_RECIPIENT
               value: '127.0.0.1'
-      serviceAccountName: keptn-default
+      serviceAccountName: keptn-locust-service
 ---
 # Expose locust-service via Port 8080 within the cluster
 apiVersion: v1
@@ -64,4 +64,38 @@ spec:
       protocol: TCP
   selector:
     run: locust-service
-
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: keptn-locust-service
+  namespace: keptn
+---
+# Role for accessing secrets in the namespace
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: keptn-locust-service-read-secrets
+  namespace: keptn
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - "secrets"
+    verbs:
+      - "get"
+---
+# Bind role for accessing secrets onto the locust service account
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: keptn-locust-service-read-secrets
+  namespace: keptn
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: keptn-locust-service-read-secrets
+subjects:
+  - kind: ServiceAccount
+    name: keptn-locust-service
+    namespace: keptn
