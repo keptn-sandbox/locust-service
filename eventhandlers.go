@@ -7,14 +7,16 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2" // make sure to use v2 cloudevents here
-	keptn "github.com/keptn/go-utils/pkg/lib"
+	env "github.com/keptn-sandbox/locust-service/pkg/environment"
 	keptnv2 "github.com/keptn/go-utils/pkg/lib/v0_2_0"
+	k8sutils "github.com/keptn/kubernetes-utils/pkg"
 )
 
 /**
@@ -303,8 +305,12 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 	if locustResouceFilenameLocal == "" && locustConfiguration == "" {
 		log.Println("Neither script nor conf is provided -> skipping tests")
 	} else {
+		log.Println("Prepare environment")
+		kubeClient, _ := k8sutils.GetKubeAPI(true)
+		EnvironmentProvider := env.NewEnvironmentProvider(kubeClient)
+		environment := EnvironmentProvider.PrepareEnvironment(myKeptn.Event.GetProject(), myKeptn.Event.GetStage(), myKeptn.Event.GetService())
 		log.Println("Running locust tests")
-		str, err := keptn.ExecuteCommand("locust", command)
+		str, err := ExecuteCommandWithEnv("locust", command, environment)
 
 		log.Println("Finished running locust tests")
 		log.Println(str)
@@ -348,4 +354,15 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 	}
 
 	return nil
+}
+
+// borrowed from go-utils, remove when https://github.com/keptn/go-utils/pull/286 is merged and new go-utils version available
+func ExecuteCommandWithEnv(command string, args []string, env []string) (string, error) {
+	cmd := exec.Command(command, args...)
+	cmd.Env = append(cmd.Env, env...)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("Error executing command %s %s: %s\n%s", command, strings.Join(args, " "), err.Error(), string(out))
+	}
+	return string(out), nil
 }

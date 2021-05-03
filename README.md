@@ -76,6 +76,20 @@ The contents of `locust.conf.yaml` should be used as described in the following:
 
 Examples for both the `locust.conf.yaml` and the [locust config file](https://docs.locust.io/en/stable/configuration.html#configuration-file) can be found in the [test-data/](test-data) directory.
 
+### Use kubernetes secrets as environment variables in the locust tests
+
+The `locust-service` injects kubernetes secrets from its namespace with a matching name (`locust-<project>-<stage>-<service>`) as environment variables for the test execution. Secrets can be created with `kubectl`:
+
+```
+kubectl -n keptn create secret generic locust-sockshop-dev-carts --from-literal=API_TOKEN=1234abcd --from-literal=PASSWORD=keptn
+```
+
+Now for tests in the project `sockshop`, stage `dev`, service `carts` the secrets will be available as environment variables in the locust tests:
+
+```
+os.environ['API_TOKEN']
+os.environ['PASSWORD']
+```
 
 ## Uninstall -  Delete from your Kubernetes cluster
 
