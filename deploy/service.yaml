@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: locust-service
-          image: keptnsandbox/locust-service:latest # Todo: Replace this with your image name
+          image: keptnsandbox/locust-service:0.1.0
           ports:
             - containerPort: 8080
           env:

@@ -4,22 +4,25 @@ This service provides a way to performance test on your application triggered by
 
 ## Compatibility Matrix
 
-| Keptn Version    | [locust-service Docker Image]() |
+| Keptn Version    | [locust-service Docker Image](https://hub.docker.com/r/keptnsandbox/locust-service/tags?page=1&ordering=last_updated) |
 |:----------------:|:----------------------------------------:|
-|       0.8.0      | to be added |
+|       0.8.0      | keptnsandbox/locust-service:0.1.0 |
+|       0.8.1      | keptnsandbox/locust-service:0.1.1 |
+|       0.8.2      | keptnsandbox/locust-service:0.1.2 |
+
 
 ## Keptn CloudEvents
 
 This service reacts on the following Keptn CloudEvents (see [deploy/service.yaml](deploy/service.yaml)):
-* `sh.keptn.event.test.triggered` (used to be `sh.keptn.events.deployment-finished`) -> start locust performance tests
-* `sh.keptn.event.test.finished` (used to be`sh.keptn.events.tests-finished`) -> clean up resources and print results
+* `sh.keptn.event.test.triggered` -> start locust performance tests
+* `sh.keptn.event.test.finished` -> clean up resources and print results
 
 ## Installation -  Deploy in your Kubernetes cluster
 
-To deploy the current version of the *locust-service* in your Keptn Kubernetes cluster, clone the repo and apply the [`deploy/service.yaml`](deploy/service.yaml) file:
+To deploy the current version of the *locust-service* in your Keptn Kubernetes cluster, run
 
 ```console
-kubectl apply -f deploy/service.yaml
+kubectl apply -f https://raw.githubusercontent.com/keptn-sandbox/locust-service/release-0.1.0/deploy/service.yaml -n keptn
 ```
 
 This will install the `locust-service` into the `keptn` namespace, which you can verify using:
