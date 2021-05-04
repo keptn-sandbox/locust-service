@@ -1,6 +1,6 @@
 # Release Notes v0.1.0
 
-This is the initial implementation of locust-service, compatible with Keptn 0.8.x.
+This is the initial implementation of locust-service, compatible with Keptn 0.8.0.
 
 ## New Features
 
