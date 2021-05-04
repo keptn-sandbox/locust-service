@@ -22,7 +22,7 @@ This service reacts on the following Keptn CloudEvents (see [deploy/service.yaml
 To deploy the current version of the *locust-service* in your Keptn Kubernetes cluster, run
 
 ```console
-kubectl apply -f https://raw.githubusercontent.com/keptn-sandbox/locust-service/release-0.1.1/deploy/service.yaml -n keptn
+kubectl apply -f https://raw.githubusercontent.com/keptn-sandbox/locust-service/release-0.1.2/deploy/service.yaml -n keptn
 ```
 
 This will install the `locust-service` into the `keptn` namespace, which you can verify using:
