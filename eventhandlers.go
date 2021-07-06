@@ -237,7 +237,16 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 		log.Println("No locust.conf.yaml file provided. Continuing with default settings!")
 	}
 
-	log.Printf("TestStrategy=%s -> testFile=%s, serviceUrl=%s\n", data.Test.TestStrategy, locustFilename, serviceURL.String())
+	msg := fmt.Sprintf("TestStrategy=%s -> testFile=%s, serviceUrl=%s\n", data.Test.TestStrategy, locustFilename, serviceURL.String())
+	fmt.Printf(msg)
+
+	_, err = myKeptn.SendTaskStatusChangedEvent(&keptnv2.EventData{
+		Message: msg,
+	}, ServiceName)
+
+	if err != nil {
+		log.Printf("Could not send status changed event: %s", err.Error())
+	}
 
 	var locustResouceFilenameLocal = ""
 	if locustFilename != "" {
