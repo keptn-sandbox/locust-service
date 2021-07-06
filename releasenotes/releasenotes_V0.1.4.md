@@ -1,6 +1,6 @@
 # Release Notes v0.1.4
 
-Compatibility for Keptn 0.8.4/0.8.5
+Compatibility with Keptn 0.8.4/0.8.5 
 
 ## New Features
 
