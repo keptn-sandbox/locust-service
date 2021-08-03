@@ -15,19 +15,19 @@ spec:
       labels:
         run: locust-service
         app.kubernetes.io/name: locust-service
-        app.kubernetes.io/version: 0.1.4
+        app.kubernetes.io/version: 0.1.5
 
     spec:
       containers:
         - name: locust-service
-          image: keptnsandbox/locust-service:0.1.4
+          image: keptnsandbox/locust-service:0.1.5
           ports:
             - containerPort: 8080
           env:
             - name: CONFIGURATION_SERVICE
               value: 'http://configuration-service:8080'
         - name: distributor
-          image: keptn/distributor:0.8.4
+          image: keptn/distributor:0.8.7
           livenessProbe:
             httpGet:
               path: /health
