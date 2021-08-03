@@ -41,7 +41,6 @@ ARG version=develop
 ENV VERSION="${version}"
 
 RUN pip3 install --no-cache-dir locust
-RUN locust --version
 
 # Copy the binary to the production image from the builder stage.
 COPY --from=builder /src/keptn-locust-service/keptn-locust-service /keptn-locust-service
