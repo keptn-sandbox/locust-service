@@ -11,7 +11,7 @@ This service provides a way to performance test on your application triggered by
 |       0.8.2      | keptnsandbox/locust-service:0.1.2 |
 |       0.8.3      | keptnsandbox/locust-service:0.1.3 | 
 |       0.8.4-0.8.5      | keptnsandbox/locust-service:0.1.4 | 
-
+|       0.8.6-0.8.7      | keptnsandbox/locust-service:0.1.5 (upgrade to Locust2) | 
 ## Keptn CloudEvents
 
 This service reacts on the following Keptn CloudEvents (see [deploy/service.yaml](deploy/service.yaml)):
@@ -23,7 +23,7 @@ This service reacts on the following Keptn CloudEvents (see [deploy/service.yaml
 To deploy the current version of the *locust-service* in your Keptn Kubernetes cluster, run
 
 ```console
-kubectl apply -f https://raw.githubusercontent.com/keptn-sandbox/locust-service/release-0.1.2/deploy/service.yaml -n keptn
+kubectl apply -f https://raw.githubusercontent.com/keptn-sandbox/locust-service/release-0.1.5/deploy/service.yaml -n keptn
 ```
 
 This will install the `locust-service` into the `keptn` namespace, which you can verify using:
