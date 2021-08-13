@@ -178,6 +178,9 @@ func replaceLocustFileName(filename string, tempDir string) {
 func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.Event, data *keptnv2.TestTriggeredEventData) error {
 	log.Printf("Handling test.triggered Event: %s", incomingEvent.Context.GetID())
 
+	// CAPTURE START TIME
+	startTime := time.Now()
+
 	// Send out a migrate.started CloudEvent
 	// The get-sli.started cloud-event is new since Keptn 0.8.0 and is required to be send when the task is started
 	_, err := myKeptn.SendTaskStartedEvent(&keptnv2.EventData{}, ServiceName)
@@ -193,7 +196,7 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 		// report error
 		log.Print(err)
 		// send out a test.finished failed CloudEvent
-		_, err = myKeptn.SendTaskFinishedEvent(&keptnv2.EventData{
+		myKeptn.SendTaskFinishedEvent(&keptnv2.EventData{
 			Status:  keptnv2.StatusErrored,
 			Result:  keptnv2.ResultFailed,
 			Message: err.Error(),
@@ -233,12 +236,34 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 			}
 		}
 	} else {
+
+		if _, err := os.Stat(DefaultLocustFilename); os.IsNotExist(err) {
+			log.Println("No locust.conf.yaml file provided. Default config also doesn't exist. Skipping Health Check!")
+
+			endTime := time.Now()
+
+			finishedEvent := &keptnv2.TestFinishedEventData{
+				Test: keptnv2.TestFinishedDetails{
+					Start: startTime.Format(time.RFC3339),
+					End:   endTime.Format(time.RFC3339),
+				},
+				EventData: keptnv2.EventData{
+					Result:  keptnv2.ResultPass,
+					Status:  keptnv2.StatusSucceeded,
+					Message: "No locust.conf.yaml file provided. Default config also doesn't exist. Skipping Health Check!",
+				},
+			}
+
+			myKeptn.SendTaskFinishedEvent(finishedEvent, ServiceName)
+
+			return nil
+		}
 		locustFilename = DefaultLocustFilename
 		log.Println("No locust.conf.yaml file provided. Continuing with default settings!")
 	}
 
 	msg := fmt.Sprintf("TestStrategy=%s -> testFile=%s, serviceUrl=%s\n", data.Test.TestStrategy, locustFilename, serviceURL.String())
-	fmt.Printf(msg)
+	log.Println(msg)
 
 	_, err = myKeptn.SendTaskStatusChangedEvent(&keptnv2.EventData{
 		Message: msg,
@@ -271,9 +296,6 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 
 		log.Println("Successfully fetched locust test file")
 	}
-
-	// CAPTURE START TIME
-	startTime := time.Now()
 
 	// Download locust configuration file
 	var locustConfiguration = ""
