@@ -12,6 +12,7 @@ This service provides a way to performance test on your application triggered by
 |       0.8.3      | keptnsandbox/locust-service:0.1.3 | 
 |       0.8.4-0.8.5      | keptnsandbox/locust-service:0.1.4 | 
 |       0.8.6-0.8.7      | keptnsandbox/locust-service:0.1.5 (upgrade to Locust v2) | 
+|       0.8.6-0.8.7      | keptnsandbox/locust-service:0.1.6 (upgrade to Locust v2) | 
 
 ## Keptn CloudEvents
 
