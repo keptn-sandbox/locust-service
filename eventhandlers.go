@@ -236,9 +236,10 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 			}
 		}
 	} else {
-
-		if _, err := os.Stat(DefaultLocustFilename); os.IsNotExist(err) {
-			log.Println("No locust.conf.yaml file provided. Default config also doesn't exist. Skipping Health Check!")
+		locustFilename = DefaultLocustFilename
+		_, err = getKeptnResource(myKeptn, locustFilename, tempDir)
+		if err != nil {
+			log.Println("No locust.conf.yaml file provided. Default locust file also doesn't exist. Skipping locust tests!")
 
 			endTime := time.Now()
 
@@ -250,7 +251,7 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 				EventData: keptnv2.EventData{
 					Result:  keptnv2.ResultPass,
 					Status:  keptnv2.StatusSucceeded,
-					Message: "No locust.conf.yaml file provided. Default config also doesn't exist. Skipping Health Check!",
+					Message: "No locust.conf.yaml file provided. Default locust file also doesn't exist. Skipping locust tests!",
 				},
 			}
 
@@ -258,7 +259,6 @@ func HandleTestTriggeredEvent(myKeptn *keptnv2.Keptn, incomingEvent cloudevents.
 
 			return nil
 		}
-		locustFilename = DefaultLocustFilename
 		log.Println("No locust.conf.yaml file provided. Continuing with default settings!")
 	}
 
