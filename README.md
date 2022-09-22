@@ -2,6 +2,11 @@
 
 This service provides a way to performance test on your application triggered by [Keptn](https://keptn.sh) using the [Locust](https://locust.io/) performance testing tool.
 
+## :warning: NOT MAINTAINED
+
+Please take a look at https://artifacthub.io/packages/keptn/keptn-integrations/locust-service as an alternative.
+
+
 ## Compatibility Matrix
 
 | Keptn Version    | [locust-service Docker Image](https://hub.docker.com/r/keptnsandbox/locust-service/tags?page=1&ordering=last_updated) |
