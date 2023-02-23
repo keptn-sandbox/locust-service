@@ -8,7 +8,7 @@ require (
 	github.com/keptn/go-utils v0.8.5
 	github.com/keptn/kubernetes-utils v0.8.3
 	github.com/stretchr/testify v1.7.0
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
+	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.22.1
 	k8s.io/apimachinery v0.22.1
 	k8s.io/client-go v0.22.1
